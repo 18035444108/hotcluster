@@ -85,8 +85,9 @@ public class HotEventCluster {
 											"hv");
 									logger.info("更新对应热点库中数据增加hv和dc" + eventJson);
 									if (null != eventJson) {
-										updateEvid(_id, evid, esJsonObject, index);
-										updateDcAndHv(ch, eventJson);
+										if(updateEvid(_id, evid, esJsonObject, index)){
+											updateDcAndHv(ch, eventJson);
+										}
 									}
 								} else {
 									logger.error("index:" + esIndex);
@@ -199,8 +200,9 @@ public class HotEventCluster {
 								// 更新ES热点库中dc和hv. ---add date 2018-3-21
 								logger.info("dc:"+eventJson.get("dc")+"    hv:"+eventJson.get("hv"));
 								logger.info("============当mongo库不存在记录时,查看热点库中是否存在，存在进行更新！");
-								updateDcAndHv(ch, eventJson);
-								updateEvid(_id, evid, esJsonObject, esJsonObject.getString("_index"));
+								if(updateEvid(_id, evid, esJsonObject, esJsonObject.getString("_index"))){
+									updateDcAndHv(ch, eventJson);
+								}
 							} 
 						}
 						
@@ -265,7 +267,7 @@ public class HotEventCluster {
 	 * @param esJsonObject
 	 * @param index
 	 */
-	private void updateEvid(String _id, String evid, JSONObject esJsonObject, String index) {
+	private boolean updateEvid(String _id, String evid, JSONObject esJsonObject, String index) {
 		JSONObject sourceJson = esJsonObject.getJSONObject("_source");
 		JSONArray evidArray = new JSONArray();
 		JSONObject dataJson = new JSONObject();
@@ -276,13 +278,17 @@ public class HotEventCluster {
 			// 判断已有的evid字段是否已经包含该值
 			if (!evidArray.contains(evid)) {
 				evidArray.add(evid);
+			}else{
+				return false;
 			}
 			dataJson.put("evid", evidArray);
 		}
 		if (EsUtil.update(dataJson, index, _id)) {
 			logger.info("----------The hot event is exists update recored success:" + _id);
+			return true;
 		} else {
 			logger.error("----------The hot event is exists update recored failed:" + _id);
+			return false;
 		}
 	}
 
