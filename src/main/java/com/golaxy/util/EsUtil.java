@@ -425,7 +425,7 @@ public class EsUtil {
 	public static void main(String[] args) {
 
 		String url = "https://localhost:19600/" +"rd_news_event" + "/document/_search";
-		String id = "E0453976735eb79c68313655f44d3f3588d";
+		String id = "01226d9e907252924fc4e847f4e22a6ba2";
 		String body = "{\"query\":{\"term\":{\"_id\":\""+id+"\"}}}";
 ////		//// String body = "{\"aggs\":}";
 ////		//// String body = "{\"query\":{\"term\":{\"ch\":3}}}";
@@ -436,8 +436,11 @@ public class EsUtil {
 //		System.out.println(response.getStatusCode());
 //		System.out.println(response.getResponseAsString());
 		JSONObject updateJson = new JSONObject();
-		updateJson.put("dc", 725);
-		System.out.println(update(updateJson, "rd_news_event", id));
+		JSONArray evidArray = new JSONArray();
+		evidArray.add("E0160b826619922be30f93f24549fb22b80");
+		updateJson.put("evid", evidArray);
+//		updateJson.put("dc", 725);
+		System.out.println(update(updateJson, "news_doc_20180606", id));
 //		JSONObject jsonObject = JSON.parseObject(response.getResponseAsString());
 //		JSONObject jsonHits = (JSONObject) jsonObject.get("hits");
 //		//// int count = jsonHits.getInteger("total");

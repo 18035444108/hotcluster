@@ -1,6 +1,7 @@
 package com.golaxy.main;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.kafka.streams.KafkaStreams;
@@ -21,8 +22,8 @@ import com.google.gson.JsonArray;
 import com.mongodb.BasicDBObject;
 
 public class HotEventCluster {
-	private static Logger logger = Logger.getLogger(HotEventCluster.class);
-	private ICTMongoDB ictMongo = new ICTMongoDB();
+	public static Logger logger = Logger.getLogger(HotEventCluster.class);
+	public ICTMongoDB ictMongo = new ICTMongoDB();
 
 	public void run() {
 
@@ -81,12 +82,13 @@ public class HotEventCluster {
 									String evid = mJsonObject.getString("e");
 									String index = esJsonObject.getString("_index");
 									// 更新ES热点库中dc和hv. ---add date 2018-3-21
-									JSONObject eventJson = EsUtil.selectByIndex(evid, ConfigData.rdEventIndex, "dc",
-											"hv");
+									JSONObject eventJson = EsUtil.selectByIndex(evid, ConfigData.rdEventIndex, "dc","hv");
 									logger.info("更新对应热点库中数据增加hv和dc" + eventJson);
+									logger.info("更新对应的文章_id"+_id);
 									if (null != eventJson) {
 										if(updateEvid(_id, evid, esJsonObject, index)){
 											updateDcAndHv(ch, eventJson);
+											logger.info("更新热点dc和文章evid成功！");
 										}
 									}
 								} else {
@@ -189,6 +191,7 @@ public class HotEventCluster {
 						}
 						String esIndex = ConfigData.chToIndexMap.get(ch);
 						JSONObject esJsonObject = waitQuery(_id, esIndex, "evid");
+						
 						dataObj.append("u", false);
 						if(null != esJsonObject){
 							if (null != eventJson) {
@@ -198,8 +201,8 @@ public class HotEventCluster {
 								String evid = eventJson.getString("_id");
 								dataObj.append("e", evid);
 								// 更新ES热点库中dc和hv. ---add date 2018-3-21
-								logger.info("dc:"+eventJson.get("dc")+"    hv:"+eventJson.get("hv"));
 								logger.info("============当mongo库不存在记录时,查看热点库中是否存在，存在进行更新！");
+								logger.info("===es对应文章："+esJsonObject);
 								if(updateEvid(_id, evid, esJsonObject, esJsonObject.getString("_index"))){
 									updateDcAndHv(ch, eventJson);
 								}
@@ -222,7 +225,7 @@ public class HotEventCluster {
 		streams.start();
 	}
 
-	private JSONObject waitQuery(String _id, String esIndex, String... fields) {
+	public JSONObject waitQuery(String _id, String esIndex, String... fields) {
 		for (int i = 0; i < 3; i++) {
 			JSONObject esJsonObject = EsUtil.selectByIndex(_id, esIndex, fields);
 			if (esJsonObject != null) {
@@ -244,7 +247,7 @@ public class HotEventCluster {
 	 * @param ch
 	 * @param eventJson
 	 */
-	private void updateDcAndHv(int ch, JSONObject eventJson) {
+	public void updateDcAndHv(int ch, JSONObject eventJson) {
 		// logger.info("------ch"+ch);
 		JSONObject dh = new JSONObject();
 		JSONObject sourceJson = eventJson.getJSONObject("_source");
@@ -267,7 +270,7 @@ public class HotEventCluster {
 	 * @param esJsonObject
 	 * @param index
 	 */
-	private boolean updateEvid(String _id, String evid, JSONObject esJsonObject, String index) {
+	public boolean updateEvid(String _id, String evid, JSONObject esJsonObject, String index) {
 		JSONObject sourceJson = esJsonObject.getJSONObject("_source");
 		JSONArray evidArray = new JSONArray();
 		JSONObject dataJson = new JSONObject();
@@ -282,6 +285,8 @@ public class HotEventCluster {
 				return false;
 			}
 			dataJson.put("evid", evidArray);
+		}else{
+			dataJson.put("evid", evid);
 		}
 		if (EsUtil.update(dataJson, index, _id)) {
 			logger.info("----------The hot event is exists update recored success:" + _id);
@@ -292,7 +297,7 @@ public class HotEventCluster {
 		}
 	}
 
-	private void UpdateBulkEvid(JSONArray jsonArray, String evid) {
+	public void UpdateBulkEvid(JSONArray jsonArray, String evid) {
 		if (EsUtil.updateBulk(jsonArray, evid)) {
 			logger.info("批量更新成功！");
 		}
@@ -300,6 +305,5 @@ public class HotEventCluster {
 
 	public static void main(String[] args) {
 		new HotEventCluster().run();
-
 	}
 }
